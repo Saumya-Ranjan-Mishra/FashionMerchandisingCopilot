@@ -7,12 +7,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_CSV = PROJECT_ROOT / "data" / "processed" / "styles_processed.csv"
 IMAGE_DIR = PROJECT_ROOT / "data" / "raw" / "images"
 
-ENCODER_PATH = PROJECT_ROOT / "encoders" / "label_encoders.pkl"
+ENCODER_PATH = PROJECT_ROOT / "data" / "processed" / "label_encoders.pkl"
 CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "best_model.pth"
+INFERENCE_CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "best_model_approach_2.pth"
 
 BATCH_SIZE = 32
-NUM_EPOCHS = 5
-LEARNING_RATE = 1e-2
+NUM_EPOCHS = 10
+LEARNING_RATE = 3e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 NUM_WORKERS = 0
 LOG_INTERVAL = 20

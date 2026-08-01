@@ -108,11 +108,11 @@ def encode_labels(df, encoder_path):
         encoders[column] = encoder
         print(f"{column}: {len(encoder.classes_)} classes")
     joblib.dump(encoders, encoder_path)
-    # print(f"Saved encoders to {encoder_path}")
-    # print(f"\n{column} mapping:")
+    print(f"Saved encoders to {encoder_path}")
+    print(f"\n{column} mapping:")
 
-    # for index, label in enumerate(encoder.classes_):
-    #   print(f"  {index} -> {label}")
+    for index, label in enumerate(encoder.classes_):
+      print(f"  {index} -> {label}")
     return df
 
 def main():
@@ -126,7 +126,7 @@ def main():
   df = load_data(csv_path)
   df = drop_missing_value(df)
   df = merge_usage(df)
-  #df = merge_colors(df)
+  df = merge_colors(df)
   df = remove_rare_articles(df, 300)
   df = verify_images(df, images_path)
   df = encode_labels(df, encoder_path)

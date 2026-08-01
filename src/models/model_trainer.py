@@ -5,7 +5,16 @@ from pathlib import Path
 
 class Trainer:
 
-    def __init__(self, model, train_loader, val_loader, device, learning_rate, checkpoint_path="best_model.pth", log_interval=200):
+    def __init__(
+        self,
+        model,
+        train_loader,
+        val_loader,
+        device,
+        learning_rate,
+        checkpoint_path="best_model.pth",
+        log_interval=200,
+    ):
 
         self.model = model
         self.train_loader = train_loader
@@ -15,13 +24,33 @@ class Trainer:
         self.checkpoint_path = checkpoint_path
         self.log_interval = log_interval
 
+        # Separate backbone parameters and head parameters for differential learning rates
+        backbone_params = []
+        head_params = []
+
+        for name, param in self.model.named_parameters():
+            if not param.requires_grad:
+                continue
+            if "head" in name:
+                head_params.append(param)
+            else:
+                backbone_params.append(param)
+
+        # Apply a smaller learning rate to the backbone (to prevent destroying pre-trained weights)
+        # and a standard learning rate to the newly initialized classification heads
         self.optimizer = torch.optim.Adam(
-            filter(
-                lambda p: p.requires_grad,
-                self.model.parameters()
-            ),
-            lr=learning_rate,
-            weight_decay=1e-8
+            [
+                {
+                    "params": backbone_params,
+                    "lr": learning_rate * 0.1,
+                }, 
+                {
+                    "params": head_params,
+                    "lr": learning_rate,
+                },  
+            ],
+            #lr = 3e-4,
+            weight_decay=1e-4,
         )
 
         self.best_validation_loss = float("inf")
@@ -80,11 +109,10 @@ class Trainer:
 
             if validation_loss < self.best_validation_loss:
                 self.best_validation_loss = validation_loss
-                Path(self.checkpoint_path).parent.mkdir(parents=True, exist_ok=True)
-                torch.save(
-                    self.model.state_dict(),
-                    self.checkpoint_path
+                Path(self.checkpoint_path).parent.mkdir(
+                    parents=True, exist_ok=True
                 )
+                torch.save(self.model.state_dict(), self.checkpoint_path)
 
                 print("Best Model Saved")
 
@@ -94,7 +122,9 @@ class Trainer:
         running_loss = 0
         accuracy_tracker = self._init_accuracy_tracker()
 
-        for step, (images, gender, article, color, usage) in enumerate(self.train_loader, start=1):
+        for step, (images, gender, article, color, usage) in enumerate(
+            self.train_loader, start=1
+        ):
             images = images.to(self.device)
             gender = gender.to(self.device)
             article = article.to(self.device)
@@ -117,7 +147,8 @@ class Trainer:
             }
             self._update_accuracy_tracker(accuracy_tracker, outputs, targets)
 
-            total_loss = (gender_loss + article_loss + 5*color_loss + usage_loss)
+            # Balanced loss combination
+            total_loss = gender_loss + article_loss + color_loss + usage_loss
             total_loss.backward()
             self.optimizer.step()
 
@@ -130,7 +161,9 @@ class Trainer:
                     f"avg_loss={avg_loss_so_far:.4f}"
                 )
 
-        return running_loss / len(self.train_loader), self._compute_accuracy(accuracy_tracker)
+        return running_loss / len(self.train_loader), self._compute_accuracy(
+            accuracy_tracker
+        )
 
     def validate(self):
 
@@ -139,7 +172,9 @@ class Trainer:
         accuracy_tracker = self._init_accuracy_tracker()
 
         with torch.no_grad():
-            for step, (images, gender, article, color, usage) in enumerate(self.val_loader, start=1):
+            for step, (images, gender, article, color, usage) in enumerate(
+                self.val_loader, start=1
+            ):
 
                 images = images.to(self.device)
                 gender = gender.to(self.device)
@@ -159,9 +194,13 @@ class Trainer:
                     "color": color,
                     "usage": usage,
                 }
-                self._update_accuracy_tracker(accuracy_tracker, outputs, targets)
+                self._update_accuracy_tracker(
+                    accuracy_tracker, outputs, targets
+                )
 
-                total_loss = (gender_loss + article_loss + color_loss + usage_loss)
+                total_loss = (
+                    gender_loss + article_loss + color_loss + usage_loss
+                )
                 running_loss += total_loss.item()
 
                 if self.log_interval > 0 and step % self.log_interval == 0:
@@ -171,4 +210,6 @@ class Trainer:
                         f"avg_loss={avg_val_loss_so_far:.4f}"
                     )
 
-        return running_loss / len(self.val_loader), self._compute_accuracy(accuracy_tracker)
+        return running_loss / len(self.val_loader), self._compute_accuracy(
+            accuracy_tracker
+        )
