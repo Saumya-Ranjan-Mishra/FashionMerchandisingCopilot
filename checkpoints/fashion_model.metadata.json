@@ -1,0 +1,135 @@
+{
+  "input": {
+    "shape": [
+      "batch",
+      3,
+      160,
+      160
+    ],
+    "color_order": "RGB",
+    "layout": "NCHW",
+    "dtype": "float32",
+    "normalization": {
+      "mean": [
+        0.485,
+        0.456,
+        0.406
+      ],
+      "std": [
+        0.229,
+        0.224,
+        0.225
+      ]
+    }
+  },
+  "outputs": {
+    "gender": {
+      "tuple_index": 0,
+      "class_count": 5,
+      "classes": [
+        "Boys",
+        "Girls",
+        "Men",
+        "Unisex",
+        "Women"
+      ],
+      "label_mapping_status": "class_count_matches_available_encoder"
+    },
+    "article": {
+      "tuple_index": 1,
+      "class_count": 29,
+      "classes": [
+        "Backpacks",
+        "Belts",
+        "Bra",
+        "Briefs",
+        "Casual Shoes",
+        "Deodorant",
+        "Dresses",
+        "Earrings",
+        "Flats",
+        "Flip Flops",
+        "Formal Shoes",
+        "Handbags",
+        "Heels",
+        "Jeans",
+        "Kurtas",
+        "Perfume and Body Mist",
+        "Sandals",
+        "Sarees",
+        "Shirts",
+        "Shorts",
+        "Socks",
+        "Sports Shoes",
+        "Sunglasses",
+        "Tops",
+        "Track Pants",
+        "Trousers",
+        "Tshirts",
+        "Wallets",
+        "Watches"
+      ],
+      "label_mapping_status": "class_count_matches_available_encoder"
+    },
+    "usage": {
+      "tuple_index": 2,
+      "class_count": 6,
+      "classes": [
+        "Casual",
+        "Ethnic",
+        "Formal",
+        "Party",
+        "Sports",
+        "Travel"
+      ],
+      "label_mapping_status": "class_count_matches_available_encoder"
+    },
+    "color": {
+      "tuple_index": 3,
+      "class_count": 39,
+      "classes": [
+        "Beige",
+        "Black",
+        "Blue",
+        "Bronze",
+        "Brown",
+        "Burgundy",
+        "Charcoal",
+        "Coffee Brown",
+        "Copper",
+        "Cream",
+        "Fluorescent Green",
+        "Gold",
+        "Green",
+        "Grey",
+        "Khaki",
+        "Lavender",
+        "Lime Green",
+        "Magenta",
+        "Mauve",
+        "Metallic",
+        "Multi",
+        "Mushroom Brown",
+        "Mustard",
+        "Nude",
+        "Orange",
+        "Peach",
+        "Pink",
+        "Purple",
+        "Red",
+        "Rose",
+        "Rust",
+        "Silver",
+        "Skin",
+        "Steel",
+        "Tan",
+        "Taupe",
+        "Teal",
+        "White",
+        "Yellow"
+      ],
+      "label_mapping_status": "class_count_matches_training_preprocessing"
+    }
+  },
+  "output_format": "logits; apply softmax along the class dimension"
+}

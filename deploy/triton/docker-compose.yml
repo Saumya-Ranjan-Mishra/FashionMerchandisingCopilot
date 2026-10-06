@@ -1,0 +1,27 @@
+services:
+  triton:
+    image: nvcr.io/nvidia/tritonserver:23.12-py3
+    command:
+      - tritonserver
+      - --model-repository=/models
+      - --model-control-mode=explicit
+      - --load-model=fashion_model
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./model_repository:/models:ro
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/api/Dockerfile
+    image: fashion-api:0.1.0
+    environment:
+      TRITON_URL: http://triton:8000
+      MODEL_METADATA_PATH: /app/fashion_model.metadata.json
+    ports:
+      - "8080:8080"
+    depends_on:
+      - triton

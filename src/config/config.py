@@ -9,7 +9,7 @@ IMAGE_DIR = PROJECT_ROOT / "data" / "raw" / "images"
 
 ENCODER_PATH = PROJECT_ROOT / "data" / "processed" / "label_encoders.pkl"
 CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "best_model.pth"
-INFERENCE_CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "best_model_approach_3.pth"
+INFERENCE_CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "best_model_approach_2.pth"
 
 BATCH_SIZE = 32
 NUM_EPOCHS = 10

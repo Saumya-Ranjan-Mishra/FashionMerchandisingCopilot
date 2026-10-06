@@ -12,10 +12,11 @@ class MultiTaskFashionModel(nn.Module):
         num_color_classes,
         num_usage_classes,
         freeze_backbone=True,
+        pretrained_backbone=True,
     ):
         super().__init__()
 
-        weights = ResNet18_Weights.DEFAULT
+        weights = ResNet18_Weights.DEFAULT if pretrained_backbone else None
         base_model = resnet18(weights=weights)
 
         if freeze_backbone:

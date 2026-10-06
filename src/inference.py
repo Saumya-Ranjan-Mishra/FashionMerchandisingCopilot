@@ -30,13 +30,11 @@ class FashionInferenceEngine:
             "usage": "usage",
         }
 
-        # 2. Extract Class Counts dynamically from Encoders
         num_gender_classes = len(self.encoders["gender"].classes_)
         num_article_classes = len(self.encoders["articleType"].classes_)
         num_color_classes = len(self.encoders["baseColour"].classes_)
         num_usage_classes = len(self.encoders["usage"].classes_)
 
-        # 3. Instantiate Model -> here legacy model is the one on which we trained the normal 
         self.model = legacy_model.LegacyResNetFashionModel(
             num_gender_classes=num_gender_classes,
             num_article_classes=num_article_classes,
@@ -45,7 +43,6 @@ class FashionInferenceEngine:
             freeze_backbone=True,
         )
 
-        # 4. Load Trained Weights
         if not Path(checkpoint_path).exists():
             raise FileNotFoundError(
                 f"Checkpoint file not found at {checkpoint_path}"
@@ -56,7 +53,6 @@ class FashionInferenceEngine:
         self.model.to(self.device)
         self.model.eval()
 
-        # 5. Image Transformation Pipeline (matching training validation specs)
         self.transform = transforms.Compose(
             [
                 transforms.Resize((config.IMAGE_SIZE, config.IMAGE_SIZE)),
@@ -73,7 +69,6 @@ class FashionInferenceEngine:
         Returns a structured dictionary with predicted labels and confidence
         scores.
         """
-        # Load image if input is a path string/Path object
         if isinstance(image_input, (str, Path)):
             image_path = Path(image_input)
             if not image_path.exists():
@@ -86,10 +81,8 @@ class FashionInferenceEngine:
                 "Input must be a file path string or PIL Image object."
             )
 
-        # Preprocess Image
         image_tensor = self.transform(image).unsqueeze(0).to(self.device)
 
-        # Model Inference
         with torch.no_grad():
             outputs = self.model(image_tensor)
 

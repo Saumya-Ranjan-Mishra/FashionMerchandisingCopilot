@@ -231,13 +231,13 @@ Input image
 conv1 → bn1 → relu → maxpool → layer1   ← early features (64 ch)
     │                                │
     │                                ▼
-    │                          AdaptiveAvgPool → color_head  🎨
+    │                          AdaptiveAvgPool → color_head  
     ▼
 layer2 → layer3 → layer4 → avgpool       ← deep features (512 ch)
     │
-    ├──► gender_head   👤
-    ├──► article_head  👕
-    └──► usage_head    🏷️
+    ├──► gender_head   
+    ├──► article_head  
+    └──► usage_head    
 ```
 
 Concretely (see [`src/models/models.py`](src/models/models.py)):

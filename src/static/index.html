@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f5ef">
+    <title>Fashion Product Classifier</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f4f5ef;
+        --surface: #ffffff;
+        --ink: #172521;
+        --muted: #68746e;
+        --line: #dce2dc;
+        --green: #176b52;
+        --lime: #d7f36a;
+        --rust: #b85138;
+        --blue: #456b8b;
+        --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+        --sans: "Aptos", "Segoe UI", sans-serif;
+        --mono: "Cascadia Code", Consolas, monospace;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background-color: var(--paper);
+        background-image: radial-gradient(#d9dfd7 0.65px, transparent 0.65px);
+        background-size: 18px 18px;
+        font-family: var(--sans);
+      }
+
+      button, input { font: inherit; }
+      button:focus-visible, a:focus-visible, label:focus-visible {
+        outline: 3px solid var(--green);
+        outline-offset: 3px;
+      }
+
+      .topbar {
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 max(24px, calc((100vw - 1160px) / 2));
+        border-bottom: 1px solid var(--line);
+        background: rgba(244, 245, 239, 0.94);
+      }
+      .brand { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 750; }
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        background: var(--ink);
+        color: var(--lime);
+        font: 700 17px var(--serif);
+      }
+      .brand small { display: block; margin-top: 2px; color: var(--muted); font: 10px var(--mono); }
+      .top-actions { display: flex; align-items: center; gap: 22px; }
+      .api-state { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+      .api-dot { width: 8px; height: 8px; border-radius: 50%; background: #d69b35; }
+      .api-state.ready .api-dot { background: var(--green); }
+      .api-state.offline .api-dot { background: var(--rust); }
+      .docs-link { color: var(--ink); font-size: 12px; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+
+      main { max-width: 1160px; margin: 0 auto; padding: 52px 24px 64px; }
+      .intro { margin-bottom: 38px; animation: arrive 450ms ease-out both; }
+      .eyebrow { margin: 0 0 12px; color: var(--green); font: 11px var(--mono); text-transform: uppercase; }
+      h1 { max-width: 740px; margin: 0; font: 400 46px/1.07 var(--serif); }
+      .intro-note { margin: 14px 0 0; color: var(--muted); font-size: 14px; }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.88fr) minmax(380px, 1.12fr);
+        min-height: 490px;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+        animation: arrive 550ms 70ms ease-out both;
+      }
+      .upload-column { padding: 24px 30px 30px 0; border-right: 1px solid var(--line); }
+      .results-column { padding: 24px 0 30px 34px; }
+      .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+      .section-index { color: var(--green); font: 11px var(--mono); }
+      .section-title { margin: 0; font-size: 13px; font-weight: 700; }
+
+      .dropzone {
+        min-height: 264px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        border: 1px dashed #9aa99e;
+        background: #f7f9f4;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 150ms ease, background-color 150ms ease;
+      }
+      .dropzone:hover, .dropzone.dragging { border-color: var(--green); background: #eff5ec; }
+      .dropzone[hidden] { display: none; }
+      .upload-glyph {
+        width: 45px;
+        height: 45px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 15px;
+        border: 1px solid #c8d2c8;
+        border-radius: 50%;
+        color: var(--green);
+        font: 25px var(--serif);
+      }
+      .drop-title { margin: 0; font: 22px var(--serif); }
+      .drop-caption { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+      .file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+      .preview { position: relative; min-height: 264px; background: #eef0ea; }
+      .preview[hidden] { display: none; }
+      .preview img { width: 100%; height: 264px; display: block; object-fit: contain; }
+      .preview-name { overflow: hidden; margin: 0; padding: 10px 12px; background: var(--ink); color: white; font: 10px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+      .upload-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+      .file-limit { color: var(--muted); font: 10px var(--mono); }
+      .text-button { padding: 7px 0; border: 0; background: transparent; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+      .classify-button {
+        width: 100%;
+        min-height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 14px;
+        border: 0;
+        background: var(--green);
+        color: white;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 150ms ease, transform 150ms ease;
+      }
+      .classify-button:not(:disabled):hover { background: #105740; transform: translateY(-1px); }
+      .classify-button:disabled { background: #8a9c91; cursor: not-allowed; }
+      .button-arrow { color: var(--lime); font-size: 18px; }
+      .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: white; border-radius: 50%; animation: spin 700ms linear infinite; }
+      .error-message { min-height: 18px; margin: 10px 0 0; color: var(--rust); font-size: 12px; }
+
+      .result-state { min-height: 414px; }
+      .prediction-list { display: none; }
+      .prediction-list.visible { display: block; animation: arrive 320ms ease-out both; }
+      .prediction-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px; gap: 12px 18px; align-items: center; padding: 18px 0 15px; border-bottom: 1px solid var(--line); }
+      .prediction-copy { min-width: 0; }
+      .prediction-label { display: block; margin-bottom: 5px; color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+      .prediction-value { display: block; overflow-wrap: anywhere; font: 23px/1.1 var(--serif); }
+      .prediction-note { display: block; margin-top: 5px; color: var(--rust); font-size: 11px; }
+      .confidence { text-align: right; }
+      .confidence strong { display: block; font: 19px var(--serif); }
+      .confidence small { color: var(--muted); font: 9px var(--mono); text-transform: uppercase; }
+      .confidence-track { grid-column: 1 / -1; height: 4px; background: #e7ece6; }
+      .confidence-fill { width: 0; height: 100%; background: var(--green); transition: width 500ms ease; }
+      .confidence-fill.color { background: var(--rust); }
+      .result-footer { display: flex; justify-content: space-between; margin-top: 18px; color: var(--muted); font: 10px var(--mono); }
+      .result-footer strong { color: var(--ink); font-weight: 500; }
+      .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+      @keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @media (max-width: 760px) {
+        .topbar { height: 62px; padding: 0 18px; }
+        .top-actions { gap: 12px; }
+        .brand { font-size: 11px; }
+        .api-state { font-size: 0; }
+        .api-dot { width: 9px; height: 9px; }
+        main { padding: 34px 18px 42px; }
+        h1 { font-size: 38px; }
+        .intro { margin-bottom: 26px; }
+        .workspace { grid-template-columns: minmax(0, 1fr); }
+        .upload-column { padding: 20px 0 25px; border-right: 0; border-bottom: 1px solid var(--line); }
+        .results-column { padding: 22px 0 24px; }
+        .dropzone, .preview, .result-state { min-height: 0; }
+        .dropzone { min-height: 230px; }
+        .preview img { height: 230px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span>FASHION MERCH<small>IMAGE CLASSIFICATION</small></span>
+      </div>
+      <div class="top-actions">
+        <span class="api-state" id="api-state"><span class="api-dot"></span><span id="api-state-text">Checking API</span></span>
+        <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">API docs ↗</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <p class="eyebrow">PRODUCT INTELLIGENCE / 01</p>
+        <h1>Fashion product classifier</h1>
+        <p class="intro-note">Upload a catalog image to inspect its predicted attributes.</p>
+      </section>
+
+      <div class="workspace">
+        <section class="upload-column" aria-labelledby="image-heading">
+          <div class="section-heading">
+            <h2 class="section-title" id="image-heading">Product image</h2>
+            <span class="section-index">01 / INPUT</span>
+          </div>
+          <input class="file-input" id="image-file" type="file" accept="image/*">
+          <label class="dropzone" id="dropzone" for="image-file" tabindex="0">
+            <span class="upload-glyph" aria-hidden="true">↑</span>
+            <span class="drop-title">Choose an image</span>
+            <span class="drop-caption">or drop it here</span>
+          </label>
+          <div class="preview" id="preview" hidden>
+            <img id="preview-image" alt="Selected fashion product">
+            <p class="preview-name" id="preview-name"></p>
+          </div>
+          <div class="upload-actions">
+            <span class="file-limit">JPEG / PNG / WEBP · MAX 10 MB</span>
+            <button class="text-button" id="clear-button" type="button" hidden>Clear image</button>
+          </div>
+          <button class="classify-button" id="classify-button" type="button" disabled>
+            <span id="button-text">Classify product</span><span class="button-arrow" id="button-icon" aria-hidden="true">↗</span>
+          </button>
+          <p class="error-message" id="error-message" role="alert"></p>
+        </section>
+
+        <section class="results-column" aria-labelledby="results-heading">
+          <div class="section-heading">
+            <h2 class="section-title" id="results-heading">Predicted attributes</h2>
+            <span class="section-index">02 / OUTPUT</span>
+          </div>
+          <div class="result-state" aria-live="polite">
+            <div class="prediction-list" id="prediction-list"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const fileInput = document.getElementById("image-file");
+      const dropzone = document.getElementById("dropzone");
+      const preview = document.getElementById("preview");
+      const previewImage = document.getElementById("preview-image");
+      const previewName = document.getElementById("preview-name");
+      const clearButton = document.getElementById("clear-button");
+      const classifyButton = document.getElementById("classify-button");
+      const buttonText = document.getElementById("button-text");
+      const buttonIcon = document.getElementById("button-icon");
+      const errorMessage = document.getElementById("error-message");
+      const predictionList = document.getElementById("prediction-list");
+      const apiState = document.getElementById("api-state");
+      const apiStateText = document.getElementById("api-state-text");
+      const maxBytes = 10 * 1024 * 1024;
+      let selectedFile = null;
+      let previewUrl = null;
+
+      async function checkApi() {
+        try {
+          const response = await fetch("/health/ready");
+          if (!response.ok) throw new Error("API is not ready");
+          apiState.classList.add("ready");
+          apiState.classList.remove("offline");
+          apiStateText.textContent = "Model ready";
+        } catch {
+          apiState.classList.remove("ready");
+          apiState.classList.add("offline");
+          apiStateText.textContent = "API unavailable";
+        }
+      }
+
+      function setFile(file) {
+        errorMessage.textContent = "";
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+          errorMessage.textContent = "Choose a supported image file.";
+          return;
+        }
+        if (file.size > maxBytes) {
+          errorMessage.textContent = "This image is larger than 10 MB.";
+          return;
+        }
+
+        selectedFile = file;
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = URL.createObjectURL(file);
+        previewImage.src = previewUrl;
+        previewName.textContent = file.name;
+        dropzone.hidden = true;
+        preview.hidden = false;
+        clearButton.hidden = false;
+        classifyButton.disabled = false;
+        predictionList.classList.remove("visible");
+        predictionList.replaceChildren();
+      }
+
+      function clearImage() {
+        selectedFile = null;
+        fileInput.value = "";
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+        previewImage.removeAttribute("src");
+        preview.hidden = true;
+        dropzone.hidden = false;
+        clearButton.hidden = true;
+        classifyButton.disabled = true;
+        errorMessage.textContent = "";
+        predictionList.replaceChildren();
+        predictionList.classList.remove("visible");
+      }
+
+      function renderPredictions(predictions) {
+        const labels = {
+          gender: "Gender",
+          article: "Article type",
+          usage: "Usage",
+          color: "Color",
+        };
+        predictionList.replaceChildren();
+
+        for (const key of ["gender", "article", "usage", "color"]) {
+          const prediction = predictions[key];
+          const row = document.createElement("div");
+          row.className = "prediction-row";
+
+          const copy = document.createElement("div");
+          copy.className = "prediction-copy";
+          const task = document.createElement("span");
+          task.className = "prediction-label";
+          task.textContent = labels[key];
+          const value = document.createElement("strong");
+          value.className = "prediction-value";
+          value.textContent = prediction.label ?? `Class ${prediction.class_index + 1}`;
+          copy.append(task, value);
+
+          if (!prediction.label) {
+            const note = document.createElement("span");
+            note.className = "prediction-note";
+            note.textContent = "Color label mapping unavailable";
+            copy.append(note);
+          }
+
+          const confidence = document.createElement("div");
+          confidence.className = "confidence";
+          const percent = document.createElement("strong");
+          percent.textContent = `${(prediction.confidence * 100).toFixed(1)}%`;
+          const caption = document.createElement("small");
+          caption.textContent = "confidence";
+          confidence.append(percent, caption);
+
+          const track = document.createElement("div");
+          track.className = "confidence-track";
+          track.setAttribute("aria-label", `${labels[key]} confidence`);
+          const fill = document.createElement("div");
+          fill.className = `confidence-fill${key === "color" ? " color" : ""}`;
+          fill.style.width = `${Math.max(0, Math.min(100, prediction.confidence * 100))}%`;
+          track.append(fill);
+          row.append(copy, confidence, track);
+          predictionList.append(row);
+        }
+
+        predictionList.classList.add("visible");
+      }
+
+      fileInput.addEventListener("change", () => setFile(fileInput.files[0]));
+      clearButton.addEventListener("click", clearImage);
+      dropzone.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          fileInput.click();
+        }
+      });
+      for (const eventName of ["dragenter", "dragover"]) {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add("dragging");
+        });
+      }
+      for (const eventName of ["dragleave", "drop"]) {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove("dragging");
+        });
+      }
+      dropzone.addEventListener("drop", (event) => setFile(event.dataTransfer.files[0]));
+      classifyButton.addEventListener("click", async () => {
+        if (!selectedFile) return;
+        const form = new FormData();
+        form.append("file", selectedFile);
+        classifyButton.disabled = true;
+        buttonText.textContent = "Classifying...";
+        buttonIcon.className = "spinner";
+        buttonIcon.textContent = "";
+        errorMessage.textContent = "";
+        try {
+          const response = await fetch("/predict", { method: "POST", body: form });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || "Prediction failed.");
+          renderPredictions(result.predictions);
+        } catch (error) {
+          errorMessage.textContent = error.message || "Could not reach the inference API.";
+        } finally {
+          classifyButton.disabled = false;
+          buttonText.textContent = "Classify product";
+          buttonIcon.className = "button-arrow";
+          buttonIcon.textContent = "↗";
+        }
+      });
+
+      checkApi();
+    </script>
+  </body>
+</html>
