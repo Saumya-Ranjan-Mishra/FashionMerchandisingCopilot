@@ -21,7 +21,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: triton
-          image: fashion-triton:0.1.0
+          image: fashion-triton:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -102,7 +102,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: fashion-api:0.1.0
+          image: fashion-api:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: TRITON_URL

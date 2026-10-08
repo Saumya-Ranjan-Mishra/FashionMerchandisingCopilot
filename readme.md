@@ -79,6 +79,65 @@ With a monolithic vision LLM, tweaking a copywriting prompt can accidentally cha
 
 PyTorch · torchvision (ResNet-18) · pandas · scikit-learn · Jupyter
 
+## Serving and Deployment
+
+The trained Approach 3 model is exported as TorchScript for Triton's PyTorch backend. Triton serves the model, and a small FastAPI service handles image uploads, preprocessing, and readable predictions. The browser UI is served by the same API container.
+
+### Run locally with Docker Compose
+
+From the repository root, build and start both containers:
+
+```powershell
+docker compose -f deploy/triton/docker-compose.yml up --build -d
+```
+
+- Open the classifier UI at [http://localhost:8080](http://localhost:8080).
+- Open interactive API documentation at [http://localhost:8080/docs](http://localhost:8080/docs).
+- The image upload endpoint is `POST http://localhost:8080/predict`, with the image sent as multipart form field `file`.
+- Triton's tensor inference API is available separately at `http://localhost:8000`.
+
+To stop the services:
+
+```powershell
+docker compose -f deploy/triton/docker-compose.yml down
+```
+
+### Deploy to Kubernetes
+
+The Triton and API images are built from [deploy/triton/Dockerfile](deploy/triton/Dockerfile) and [deploy/api/Dockerfile](deploy/api/Dockerfile). Kubernetes resources and GHCR image transforms live in [deploy/kubernetes](deploy/kubernetes). The API is exposed inside the cluster through a `ClusterIP` Service; access it locally with:
+
+```powershell
+kubectl apply -k deploy/kubernetes
+kubectl rollout status deployment/fashion-triton -n fashion-merchandising
+kubectl rollout status deployment/fashion-api -n fashion-merchandising
+kubectl port-forward service/fashion-api 8080:8080 -n fashion-merchandising
+```
+
+Then visit [http://localhost:8080](http://localhost:8080). The manifest points to the public GHCR `main` images by default, so no image pull secret is required.
+
+### GitHub Actions release and deployment
+
+The workflow at [.github/workflows/deploy-kubernetes.yml](.github/workflows/deploy-kubernetes.yml) builds and publishes two GHCR images on pushes to `main`, version tags matching `v*`, or a manual run:
+
+- `ghcr.io/saumya-ranjan-mishra/fashionmerchandisingcopilot-triton`
+- `ghcr.io/saumya-ranjan-mishra/fashionmerchandisingcopilot-api`
+
+GHCR packages are private by default. After the first successful workflow run, change both package visibilities to **Public** in their GitHub package settings so Kubernetes can pull them without credentials.
+
+Each image is tagged with the commit SHA; the branch or release tag is also published. The deploy job rewrites the Kustomize images to the SHA-specific tags and waits for both Kubernetes rollouts.
+
+Add this repository Actions secret before enabling deployment:
+
+- `KUBECONFIG_B64`: base64-encoded kubeconfig for a cluster the GitHub runner can reach, with permission to manage the `fashion-merchandising` namespace, Deployments, and Services.
+
+In PowerShell, encode the kubeconfig file before adding it as the `KUBECONFIG_B64` secret:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\.kube\config"))
+```
+
+Keep the resulting value private. For a private AKS cluster, use a self-hosted GitHub runner or another network path that can reach the Kubernetes API server. Prefer a least-privilege Kubernetes identity over an administrator kubeconfig.
+
 ## Next Steps
 
 - Train longer (15–20 epochs) — color accuracy was still climbing at epoch 10.
@@ -231,13 +290,13 @@ Input image
 conv1 → bn1 → relu → maxpool → layer1   ← early features (64 ch)
     │                                │
     │                                ▼
-    │                          AdaptiveAvgPool → color_head  
+    │                          AdaptiveAvgPool → color_head
     ▼
 layer2 → layer3 → layer4 → avgpool       ← deep features (512 ch)
     │
-    ├──► gender_head   
-    ├──► article_head  
-    └──► usage_head    
+    ├──► gender_head
+    ├──► article_head
+    └──► usage_head
 ```
 
 Concretely (see [`src/models/models.py`](src/models/models.py)):

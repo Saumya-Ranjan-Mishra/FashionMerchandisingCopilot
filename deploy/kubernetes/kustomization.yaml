@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - fashion-triton.yaml
+
+images:
+  - name: fashion-triton
+    newName: ghcr.io/saumya-ranjan-mishra/fashionmerchandisingcopilot-triton
+    newTag: main
+  - name: fashion-api
+    newName: ghcr.io/saumya-ranjan-mishra/fashionmerchandisingcopilot-api
+    newTag: main
