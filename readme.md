@@ -1,6 +1,30 @@
-# Fashion Merchandising Copilot
+# AI-Powered Fashion Merchandising Copilot
 
-A **multi-head (multi-task) image classification** model built on top of a ResNet-18 backbone that, given a single fashion product image, simultaneously predicts four attributes:
+Turn a product image into structured catalog intelligence. This **multi-head (multi-task) ResNet-18 classifier** predicts gender, article type, color, and usage in one pass.
+
+## Contents
+
+- [Model Outputs](#model-outputs)
+- [Demo](#demo)
+- [Project Structure](#project-structure)
+- [Dataset](#dataset)
+- [Results Summary](#results-summary)
+- [Why Not Just Use a Vision LLM?](#why-not-just-use-a-vision-llm)
+- [Tech Stack](#tech-stack)
+- [Serving and Deployment](#serving-and-deployment)
+    - [Run Locally with Docker Compose](#run-locally-with-docker-compose)
+    - [Deploy to Kubernetes](#deploy-to-kubernetes)
+    - [GitHub Actions Release and Deployment](#github-actions-release-and-deployment)
+- [Next Steps](#next-steps)
+- [Experiment Log](#experiment-log)
+    - [First Approach](#first-approach)
+    - [Second Approach](#second-approach)
+    - [Third Approach](#third-approach)
+- [Inference Results](#inference-results)
+
+## Model Outputs
+
+Given a single fashion product image, the model predicts four attributes:
 
 | Head      | What it predicts                                    | # Classes |
 | --------- | --------------------------------------------------- | --------- |
@@ -12,6 +36,10 @@ A **multi-head (multi-task) image classification** model built on top of a ResNe
 > "Multi-head classification" is the correct term. It's also commonly called **multi-task learning** with **hard parameter sharing**: one shared CNN backbone with multiple task-specific classification heads trained jointly.
 
 - This model is trained on Kaggle Fashion Dataset which can be found here: https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small
+
+## Demo
+
+[Watch the Fashion Merchandising Copilot demo](https://github.com/user-attachments/assets/47cfd463-e5cd-4f1d-b6d7-80157219e080)
 
 ## Project Structure
 
@@ -147,9 +175,9 @@ Keep the resulting value private. For a private AKS cluster, use a self-hosted G
 
 ---
 
-# Experiment Log
+## Experiment Log
 
-## First Approach
+### First Approach
 
 - Use ResNet18 models with default weights and freeze parameters
 - Check the accuracy with 5 epochs
@@ -196,23 +224,23 @@ Val Accuracy    : gender=87.13%, article=84.80%, color=61.94%, usage=89.33%
 ------------------------------------------------------------
 ```
 
-### Observations (Achievements)
+#### Observations (Achievements)
 
 - The training and validation loop looks good! We are able to calculate the loss and accuracy
 - The validation accuracy is greater than train accuracy that means, the dropout is doing its job.
 - The gender, article and usage accuracy is Ok (not good, Target is > 90%)
 
-### Observations (Need improvement)
+#### Observations (Need improvement)
 
 - But the color accuracy is Bad, its just 60%.
 - That means the color tensors are not getting trained properly
 
-#### Things to try for improvements
+##### Things to try for improvements
 
 - Lets unfreeze the paramters and let the paramters get trained. and observe the accuracy again!
 - For this we will simply set `FREEZE_BACKBONE=False` in the `config.py` file
 
-## Second Approach
+### Second Approach
 
 - Use ResNet18 model with default weights and unfreeze parameters
 - Check the accuracy with 5 epochs
@@ -258,16 +286,16 @@ Train Accuracy : gender=92.05%, article=91.86%, color=70.70%, usage=92.70%
 Val Accuracy : gender=91.88%, article=89.28%, color=68.84%, usage=91.62%
 ```
 
-### Observations (Achievements)
+#### Observations (Achievements)
 
 - The gender, article and usage accuracy is improved annd is above target.
 
-### Observations (Need improvement)
+#### Observations (Need improvement)
 
 - But the color accuracy still struggle at nearly 70%.
 - That means the color tensors are not getting trained properly, or may be the color data is getting loss while moving forward or deep in the training phase in the ResNet.
 
-#### Things to try for improvements
+##### Things to try for improvements
 
 - Lets separate the neural net into two category.
   - One will have the first layer output and we will call it initial layer. This layers output will be directly fed into the color_head layer for the color prediction
@@ -275,7 +303,7 @@ Val Accuracy : gender=91.88%, article=89.28%, color=68.84%, usage=91.62%
 
 - Since we have already seen that the accuracy is high when we set FREEZE_BACKBONE=False, lets train the model with that approach and see how the result looks like.
 
-## Third Approach
+### Third Approach
 
 This is where the biggest change happened — I stopped trying to fix color with more training and instead **restructured the network itself**.
 
